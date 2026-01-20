@@ -154,16 +154,6 @@ PLANT_API_BASE_URL=http://192.168.0.205
 
 ---
 
-## Rozszerzenia (pomysły)
-
-- Zakresy parametrów per roślina
-- Dashboard kondycji roślin
-- Wykresy historii (Chart.js)
-- Automatyczne pobieranie danych (cron)
-- Eksport danych (CSV / PDF)
-
----
-
 ## Licencja
 
 Projekt prywatny / edukacyjny.
