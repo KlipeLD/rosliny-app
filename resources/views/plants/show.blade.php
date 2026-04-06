@@ -15,6 +15,13 @@
 
         <div class="d-flex gap-2">
             <a href="{{ route('plants.edit', $plant) }}" class="btn btn-outline-primary">Edytuj</a>
+            <form method="POST"
+                  action="{{ route('plants.destroy', $plant) }}"
+                  onsubmit="return confirm('Usunąć tę roślinę?');">
+                @csrf
+                @method('DELETE')
+                <button type="submit" class="btn btn-outline-danger">Usuń</button>
+            </form>
             <a href="{{ route('plants.index') }}" class="btn btn-outline-secondary">Wróć</a>
         </div>
     </div>
@@ -30,6 +37,42 @@
         </div>
     @endif
 
+    <div class="row g-4 mb-4">
+        <div class="col-md-6">
+            <div class="card p-3 h-100">
+                <h5 class="mb-2">Zakres wilgotności gleby</h5>
+                <div class="small text-muted">
+                    Dopuszczalny: {{ $plant->soil_moisture_min ?? 10 }}-{{ $plant->soil_moisture_max ?? 80 }}%
+                    |
+                    Idealny: {{ $plant->soil_moisture_ideal_min ?? 20 }}-{{ $plant->soil_moisture_ideal_max ?? 60 }}%
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card p-3 h-100">
+                <h5 class="mb-2">Przewidywana data podlewania</h5>
+
+                @if($wateringPrediction['available'])
+                    <div class="fs-5 fw-semibold mb-1">
+                        {{ $wateringPrediction['date']->format('Y-m-d H:i') }}
+                    </div>
+                    <div class="small text-muted mb-1">{{ $wateringPrediction['details'] }}</div>
+                    <div class="small text-muted">
+                        Ostatni moment podlewania:
+                        {{ $wateringPrediction['last_watering_at']->format('Y-m-d H:i') }}
+                        @if(($wateringPrediction['mode'] ?? null) === 'estimated' && !empty($wateringPrediction['samples']))
+                            |
+                            próbki: {{ $wateringPrediction['samples'] }}
+                        @endif
+                    </div>
+                @else
+                    <div class="text-muted">Brak wystarczających danych</div>
+                @endif
+            </div>
+        </div>
+    </div>
+
     <div class="card p-3 mb-4">
         <h5 class="mb-3">Historia wpisów</h5>
 
@@ -43,16 +86,31 @@
         @else
             @foreach($entries as $entry)
                 @php
-                    $temp  = param_status($entry->temp_c,     [18,26,15,30]);
-                    $moist = param_status($entry->moist_pct,  [20,60,10,80]);
-                    $ph    = param_status($entry->ph,         [6.0,7.2,5.5,7.8]);
-                    $ec    = param_status($entry->ec_uscm,    [200,1200,100,2000]);
+                    $temp = param_status($entry->temp_c, [18, 26, 15, 30]);
+                    $moist = param_status($entry->moist_pct, $plant->moistureRanges());
+                    $ph = param_status($entry->ph, [6.0, 7.2, 5.5, 7.8]);
+                    $ec = param_status($entry->ec_uscm, [200, 1200, 100, 2000]);
 
-                    $n     = param_status($entry->n_mgkg,     [20,60,10,100]);
-                    $p     = param_status($entry->p_mgkg,     [10,40,5,80]);
-                    $k     = param_status($entry->k_mgkg,     [20,80,10,150]);
+                    $n = param_status($entry->n_mgkg, [20, 60, 10, 100]);
+                    $p = param_status($entry->p_mgkg, [10, 40, 5, 80]);
+                    $k = param_status($entry->k_mgkg, [20, 80, 10, 150]);
+                    $salt = param_status($entry->salt_mgl, [0, 200, 200, 400]);
 
-                    $salt  = param_status($entry->salt_mgl,   [0,200,200,400]);
+                    $soilMin = $plant->soil_moisture_min ?? 10;
+                    $soilMax = $plant->soil_moisture_max ?? 80;
+                    $soilIdealMin = $plant->soil_moisture_ideal_min ?? 20;
+                    $soilIdealMax = $plant->soil_moisture_ideal_max ?? 60;
+                    $moistValue = $entry->moist_pct;
+                    $moistMarker = $moistValue !== null ? max(0, min(100, (float) $moistValue)) : null;
+                    $moistHint = null;
+
+                    if ($moistValue !== null) {
+                        if ((float) $moistValue < (float) $soilIdealMin) {
+                            $moistHint = '💧';
+                        } elseif ((float) $moistValue > (float) $soilMax) {
+                            $moistHint = '☀️';
+                        }
+                    }
                 @endphp
 
                 <div class="card mb-3 shadow-sm">
@@ -70,17 +128,15 @@
                                 Kopiuj
                             </button>
 
-
-
                             <div class="d-flex gap-2">
                                 <a href="{{ route('entries.edit', $entry) }}"
-                                class="btn btn-sm btn-outline-secondary">
+                                   class="btn btn-sm btn-outline-secondary">
                                     Edytuj
                                 </a>
 
                                 <form method="POST"
-                                    action="{{ route('entries.destroy', $entry) }}"
-                                    onsubmit="return confirm('Usunąć ten wpis?');">
+                                      action="{{ route('entries.destroy', $entry) }}"
+                                      onsubmit="return confirm('Usunąć ten wpis?');">
                                     @csrf
                                     @method('DELETE')
 
@@ -92,23 +148,52 @@
                             </div>
                         </div>
 
+                        <div class="soil-moisture-card soil-moisture-card--{{ $moist['class'] }} mb-3">
+                            <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+                                <div>
+                                    <div class="soil-moisture-card__label">Wilgotność gleby</div>
+                                    <div class="soil-moisture-card__value">
+                                        @if($moistValue !== null)
+                                            {{ number_format($moistValue, 1, ',', '') }} %
+                                            @if($moistHint)
+                                                <span class="soil-moisture-card__hint" aria-hidden="true">{{ $moistHint }}</span>
+                                            @endif
+                                        @else
+                                            brak danych
+                                        @endif
+                                    </div>
+                                </div>
+                                <div class="soil-moisture-card__status">{{ $moist['label'] }}</div>
+                            </div>
 
-                        {{-- PODSTAWOWE PARAMETRY --}}
+                            <div class="soil-moisture-scale">
+                                <div class="soil-moisture-scale__base"></div>
+                                <div class="soil-moisture-scale__range soil-moisture-scale__range--warn"
+                                     style="left: {{ $soilMin }}%; width: {{ max(0, $soilMax - $soilMin) }}%;"></div>
+                                <div class="soil-moisture-scale__range soil-moisture-scale__range--ideal"
+                                     style="left: {{ $soilIdealMin }}%; width: {{ max(0, $soilIdealMax - $soilIdealMin) }}%;"></div>
+
+                                @if($moistMarker !== null)
+                                    <div class="soil-moisture-scale__marker" style="left: {{ $moistMarker }}%;">
+                                        <span class="soil-moisture-scale__marker-dot"></span>
+                                    </div>
+                                @endif
+                            </div>
+
+                            <div class="soil-moisture-scale__legend">
+                                <span>0%</span>
+                                <span>Dopuszczalne: {{ $soilMin }}-{{ $soilMax }}%</span>
+                                <span>Idealne: {{ $soilIdealMin }}-{{ $soilIdealMax }}%</span>
+                                <span>100%</span>
+                            </div>
+                        </div>
+
                         <div class="row g-3 mb-2">
-
                             <div class="col-md-3">
                                 <div class="param-box bg-{{ $temp['class'] }}">
                                     <div class="param-label">Temperatura</div>
                                     <div class="param-value">{{ $entry->temp_c }} °C</div>
                                     <div class="param-status">{{ $temp['label'] }}</div>
-                                </div>
-                            </div>
-
-                            <div class="col-md-3">
-                                <div class="param-box bg-{{ $moist['class'] }}">
-                                    <div class="param-label">Wilgotność</div>
-                                    <div class="param-value">{{ $entry->moist_pct }} %</div>
-                                    <div class="param-status">{{ $moist['label'] }}</div>
                                 </div>
                             </div>
 
@@ -128,11 +213,16 @@
                                 </div>
                             </div>
 
+                            <div class="col-md-3">
+                                <div class="param-box bg-{{ $salt['class'] }}">
+                                    <div class="param-label">Zasolenie</div>
+                                    <div class="param-value">{{ $entry->salt_mgl }} mg/l</div>
+                                    <div class="param-status">{{ $salt['label'] }}</div>
+                                </div>
+                            </div>
                         </div>
 
-                        {{-- NPK --}}
                         <div class="row g-3 mb-2">
-
                             <div class="col-md-4">
                                 <div class="param-box bg-{{ $n['class'] }}">
                                     <div class="param-label">Azot (N)</div>
@@ -156,18 +246,6 @@
                                     <div class="param-status">{{ $k['label'] }}</div>
                                 </div>
                             </div>
-
-                        </div>
-
-                        {{-- ZASOLENIE --}}
-                        <div class="row g-3">
-                            <div class="col-md-4">
-                                <div class="param-box bg-{{ $salt['class'] }}">
-                                    <div class="param-label">Zasolenie</div>
-                                    <div class="param-value">{{ $entry->salt_mgl }} mg/l</div>
-                                    <div class="param-status">{{ $salt['label'] }}</div>
-                                </div>
-                            </div>
                         </div>
 
                         @if($entry->note)
@@ -175,7 +253,7 @@
                                 {!! nl2br(e($entry->note)) !!}
                             </div>
                         @endif
-                        
+
                         <textarea
                             id="copy-entry-{{ $entry->id }}"
                             class="js-copy-source d-none">
@@ -192,12 +270,9 @@ Fosfor (P): {{ $entry->p_mgkg }} mg/kg
 Potas (K): {{ $entry->k_mgkg }} mg/kg
 Zasolenie: {{ $entry->salt_mgl }} mg/l
                         </textarea>
-
-
-
                     </div>
                 </div>
-                @endforeach
+            @endforeach
 
             <div class="mt-2">
                 {{ $entries->links() }}

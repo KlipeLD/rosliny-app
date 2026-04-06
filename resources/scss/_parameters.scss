@@ -21,3 +21,131 @@
     opacity: 0.9;
   }
 }
+
+.soil-moisture-card {
+  border-radius: 14px;
+  padding: 16px;
+  color: #16321f;
+  background: linear-gradient(135deg, #f6fbf5 0%, #edf8ef 100%);
+  border: 1px solid rgba(46, 125, 50, 0.14);
+
+  &--success {
+    background: linear-gradient(135deg, #effaf1 0%, #dff3e3 100%);
+  }
+
+  &--warning {
+    background: #ffc107 !important;
+  }
+
+  &--danger {
+    background: #dc3545 !important;
+  }
+
+  &--secondary {
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+    color: #374151;
+  }
+}
+
+.soil-moisture-card__label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.soil-moisture-card__value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.1;
+  margin-top: 4px;
+}
+
+.soil-moisture-card__hint {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 1.35rem;
+  vertical-align: baseline;
+  transform: translateY(-2px);
+}
+
+.soil-moisture-card__status {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  opacity: 0.8;
+  white-space: nowrap;
+}
+
+.soil-moisture-scale {
+  position: relative;
+  height: 42px;
+  margin-bottom: 8px;
+}
+
+.soil-moisture-scale__base,
+.soil-moisture-scale__range {
+  position: absolute;
+  top: 14px;
+  height: 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.95);
+}
+
+.soil-moisture-scale__base {
+  left: 0;
+  right: 0;
+  background: linear-gradient(90deg, #dc3545 0%, #dc3545 10%, #dc3545 22%, #dc3545 50%, #dc3545 78%, #dc3545 90%, #dc3545 100%);
+  opacity: 0.55;
+}
+
+.soil-moisture-scale__range--warn {
+  background: linear-gradient(90deg, #f59e0b 0%, #f59e0b 100%);
+  opacity: 0.75;
+}
+
+.soil-moisture-scale__range--ideal {
+  background: linear-gradient(90deg, #16a34a 0%, #22c55e 100%);
+  opacity: 0.95;
+}
+
+.soil-moisture-scale__marker {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+}
+
+.soil-moisture-scale__marker::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 10px;
+  width: 2px;
+  height: 24px;
+  background: rgba(17, 24, 39, 0.55);
+  transform: translateX(-50%);
+}
+
+.soil-moisture-scale__marker-dot {
+  display: block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #111827;
+  border: 3px solid #fff;
+  box-shadow: 0 2px 8px rgba(17, 24, 39, 0.25);
+}
+
+.soil-moisture-scale__legend {
+  display: grid;
+  grid-template-columns: auto 1fr 1fr auto;
+  gap: 8px;
+  font-size: 0.78rem;
+  color: rgba(17, 24, 39, 0.7);
+}
+
+@media (max-width: 767.98px) {
+  .soil-moisture-scale__legend {
+    grid-template-columns: 1fr 1fr;
+  }
+}
