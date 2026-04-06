@@ -4,6 +4,9 @@ Aplikacja webowa w Laravelu do monitorowania stanu roślin na podstawie danych z
 Pozwala zarządzać roślinami, zapisywać historię pomiarów, oceniać parametry kolorami oraz edytować, usuwać i kopiować wpisy.
 
 ---
+## Powiązane projekty
+
+- Aplikacja na Arduino: https://github.com/KlipeLD/arduinoPlantsApp
 
 ## Funkcjonalności
 
