@@ -36,3 +36,34 @@ main {
     }
   }
 }
+
+.pagination {
+  --bs-pagination-color: #5f7f1f;
+  --bs-pagination-hover-color: #4f6c18;
+  --bs-pagination-focus-color: #4f6c18;
+  --bs-pagination-active-color: #1f2a0a;
+  --bs-pagination-active-bg: #b7e36a;
+  --bs-pagination-active-border-color: #b7e36a;
+  --bs-pagination-hover-bg: #e8f7c5;
+  --bs-pagination-hover-border-color: #cfe99a;
+  --bs-pagination-focus-bg: #e8f7c5;
+  --bs-pagination-focus-box-shadow: 0 0 0 0.2rem rgba(183, 227, 106, 0.35);
+}
+
+.pagination .page-link {
+  color: #2f855a !important;
+}
+
+.pagination .page-link:hover,
+.pagination .page-link:focus {
+  color: #2f855a !important;
+  background-color: rgba(47, 133, 90, 0.12) !important;
+  border-color: rgba(47, 133, 90, 0.28) !important;
+  box-shadow: none !important;
+}
+
+.pagination .page-item.active .page-link {
+  color: #fff !important;
+  background-color: #2f855a !important;
+  border-color: #2f855a !important;
+}

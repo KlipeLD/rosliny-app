@@ -13,7 +13,7 @@ class PlantController extends Controller
     {
         $plants = Plant::with([
             'entries' => fn ($query) => $query->orderByRaw('COALESCE(recorded_at, created_at) asc'),
-        ])->latest()->paginate(20);
+        ])->latest()->paginate(50);
 
         $topWateringPlants = Plant::with([
             'entries' => fn ($query) => $query->orderByRaw('COALESCE(recorded_at, created_at) asc'),
@@ -40,7 +40,7 @@ class PlantController extends Controller
 
     public function show(Plant $plant)
     {
-        $entries = $plant->entries()->latest('recorded_at')->paginate(20);
+        $entries = $plant->entries()->latest('recorded_at')->paginate(50);
         $predictionEntries = $plant->entries()
             ->orderByRaw('COALESCE(recorded_at, created_at) asc')
             ->get();
