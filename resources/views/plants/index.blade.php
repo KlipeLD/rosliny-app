@@ -13,7 +13,7 @@
     @if(isset($topWateringPlants) && $topWateringPlants->isNotEmpty())
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-body">
-                <h5 class="card-title mb-3">Top 5 do podlania</h5>
+                <h5 class="card-title mb-3">Top 6 do podlania</h5>
 
                 <div class="row g-3">
                     @foreach($topWateringPlants as $item)

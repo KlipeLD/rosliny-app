@@ -32,7 +32,7 @@ class PlantController extends Controller
             })
             ->filter()
             ->sortBy(fn ($item) => $item['prediction']['date']->timestamp)
-            ->take(5)
+            ->take(6)
             ->values();
 
         return view('plants.index', compact('plants', 'topWateringPlants'));
