@@ -10,6 +10,7 @@ class Plant extends Model
     protected $fillable = [
         'name',
         'description',
+        'plant_type',
         'photo_path',
         'soil_moisture_min',
         'soil_moisture_max',
@@ -47,7 +48,9 @@ class Plant extends Model
             ->orderByRaw('COALESCE(recorded_at, created_at) asc')
             ->get();
 
-        $wateringMoments = $this->inferWateringMoments($entries);
+        $wateringMoments = $this->plant_type === 'manual'
+            ? $this->manualWateringMoments($entries)
+            : $this->inferWateringMoments($entries);
 
         if ($this->watering_interval_days) {
             $lastWateringAt = $wateringMoments->last();
@@ -114,6 +117,15 @@ class Plant extends Model
         }
 
         return $moments;
+    }
+
+    private function manualWateringMoments(Collection $entries): Collection
+    {
+        return $entries
+            ->filter(fn ($entry) => $entry->source === 'watering')
+            ->map(fn ($entry) => ($entry->recorded_at ?? $entry->created_at)?->copy())
+            ->filter()
+            ->values();
     }
 
 }

@@ -55,6 +55,10 @@ class PlantEntryController extends Controller
 
     public function fetchFromApi(Plant $plant)
     {
+        if ($plant->plant_type !== 'sensor') {
+            return back()->with('error', 'Ta roślina nie korzysta z danych z czujnika.');
+        }
+
         $response = Http::timeout(5)
             ->acceptJson()
             ->get(rtrim(config('services.plant_api.base_url'), '/').'/soil');
@@ -85,5 +89,26 @@ class PlantEntryController extends Controller
         ]);
 
         return back()->with('success', 'Dodano nowy wpis z czujnika');
+    }
+
+    public function storeWatering(Request $request, Plant $plant)
+    {
+        if ($plant->plant_type !== 'manual') {
+            return back()->with('error', 'Podlewanie ręczne jest dostępne tylko dla roślin bez czujnika.');
+        }
+
+        $validated = $request->validate([
+            'recorded_at' => ['required', 'date'],
+            'note' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $plant->entries()->create([
+            'source' => 'watering',
+            'payload' => [],
+            'recorded_at' => $validated['recorded_at'],
+            'note' => $validated['note'] ?? null,
+        ]);
+
+        return back()->with('success', 'Dodano wpis podlewania');
     }
 }

@@ -30,5 +30,6 @@ Route::patch('entries/{entry}', [PlantEntryController::class, 'update'])->name('
 Route::delete('entries/{entry}', [PlantEntryController::class, 'destroy'])->name('entries.destroy');
 
 Route::post('plants/{plant}/entries/fetch', [PlantEntryController::class, 'fetchFromApi'])->name('plants.entries.fetch');
+Route::post('plants/{plant}/entries/watering', [PlantEntryController::class, 'storeWatering'])->name('plants.entries.watering');
 Route::get('entries/{entry}/edit', [PlantEntryController::class, 'edit'])->name('entries.edit');
 Route::patch('entries/{entry}', [PlantEntryController::class, 'update'])->name('entries.update');

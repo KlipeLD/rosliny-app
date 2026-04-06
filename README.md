@@ -165,5 +165,8 @@ Możesz dowolnie modyfikować na własne potrzeby.
 ## Strona główna
 ![Strona główna](docs/images/screen1.png)
 
-## Widok rośliny
+## Widok rośliny (pobieranie danych z API)
 ![Widok rośliny](docs/images/screen2.png)
+
+## Widok rośliny (ręczne dodawanie podlewania)
+![Widok rośliny](docs/images/screen3.png)

@@ -10,6 +10,56 @@
         </a>
     </div>
 
+    @if(isset($topWateringPlants) && $topWateringPlants->isNotEmpty())
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+                <h5 class="card-title mb-3">Top 5 do podlania</h5>
+
+                <div class="row g-3">
+                    @foreach($topWateringPlants as $item)
+                        <div class="col-12 col-md-6 col-xl-4">
+                            <a href="{{ route('plants.show', $item['plant']) }}" class="text-decoration-none">
+                                <div class="border rounded p-3 h-100">
+                                    <div class="d-flex justify-content-between align-items-start gap-2">
+                                        <div class="d-flex align-items-start gap-3">
+                                            @if($item['plant']->photo_path)
+                                                <img
+                                                    src="{{ Storage::disk('public')->url($item['plant']->photo_path) }}"
+                                                    alt="{{ $item['plant']->name }}"
+                                                    class="rounded flex-shrink-0"
+                                                    style="width: 56px; height: 56px; object-fit: cover;"
+                                                >
+                                            @else
+                                                <div
+                                                    class="rounded d-flex align-items-center justify-content-center text-muted bg-light flex-shrink-0"
+                                                    style="width: 56px; height: 56px;"
+                                                >
+                                                    🌿
+                                                </div>
+                                            @endif
+
+                                            <div>
+                                                <div class="fw-semibold text-dark">{{ $item['plant']->name }}</div>
+                                                <div class="small text-muted">
+                                                    {{ $item['prediction']['date']->format('Y-m-d H:i') }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <span aria-hidden="true">💧</span>
+                                    </div>
+
+                                    <div class="small text-muted mt-2">
+                                        {{ $item['prediction']['details'] }}
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        </div>
+    @endif
+
     <div class="row g-4">
         @foreach ($plants as $plant)
             @php

@@ -15,7 +15,27 @@ class PlantController extends Controller
             'entries' => fn ($query) => $query->orderByRaw('COALESCE(recorded_at, created_at) asc'),
         ])->latest()->paginate(20);
 
-        return view('plants.index', compact('plants'));
+        $topWateringPlants = Plant::with([
+            'entries' => fn ($query) => $query->orderByRaw('COALESCE(recorded_at, created_at) asc'),
+        ])->get()
+            ->map(function (Plant $plant) {
+                $prediction = $plant->predictedWatering($plant->entries);
+
+                if (! ($prediction['available'] ?? false)) {
+                    return null;
+                }
+
+                return [
+                    'plant' => $plant,
+                    'prediction' => $prediction,
+                ];
+            })
+            ->filter()
+            ->sortBy(fn ($item) => $item['prediction']['date']->timestamp)
+            ->take(5)
+            ->values();
+
+        return view('plants.index', compact('plants', 'topWateringPlants'));
     }
 
     public function show(Plant $plant)
@@ -47,6 +67,7 @@ class PlantController extends Controller
         $plant = Plant::create([
             'name' => $validated['name'],
             'description' => $validated['description'] ?? null,
+            'plant_type' => $validated['plant_type'],
             'photo_path' => $path,
             'soil_moisture_min' => $validated['soil_moisture_min'] ?? null,
             'soil_moisture_max' => $validated['soil_moisture_max'] ?? null,
@@ -84,6 +105,7 @@ class PlantController extends Controller
 
         $plant->name = $validated['name'];
         $plant->description = $validated['description'] ?? null;
+        $plant->plant_type = $validated['plant_type'];
         $plant->soil_moisture_min = $validated['soil_moisture_min'] ?? null;
         $plant->soil_moisture_max = $validated['soil_moisture_max'] ?? null;
         $plant->soil_moisture_ideal_min = $validated['soil_moisture_ideal_min'] ?? null;
@@ -110,6 +132,7 @@ class PlantController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
+            'plant_type' => ['required', 'in:sensor,manual'],
             'photo' => ['nullable', 'image', 'max:2048'],
             'remove_photo' => [$isUpdate ? 'nullable' : 'sometimes', 'boolean'],
             'soil_moisture_min' => ['nullable', 'numeric', 'between:0,100'],
