@@ -157,6 +157,11 @@
                                 </div>
 
                                 <div class="d-flex gap-2">
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-primary js-copy-entry"
+                                            data-entry-id="{{ $entry->id }}">
+                                        Kopiuj
+                                    </button>
                                     <a href="{{ route('entries.edit', $entry) }}" class="btn btn-sm btn-outline-secondary">Edytuj</a>
                                     <form method="POST" action="{{ route('entries.destroy', $entry) }}" onsubmit="return confirm('Usunąć ten wpis?');">
                                         @csrf
@@ -219,6 +224,21 @@
                             @if($entry->note)
                                 <div class="mt-3 text-muted">{!! nl2br(e($entry->note)) !!}</div>
                             @endif
+
+                            <textarea id="copy-entry-{{ $entry->id }}" class="js-copy-source d-none">
+Roślina: {{ $plant->name }}
+Data: {{ ($entry->recorded_at ?? $entry->created_at)->format('Y-m-d H:i') }}
+
+Temperatura: {{ $entry->temp_c }} °C
+Wilgotność gleby: {{ $entry->moist_pct }} %
+pH gleby: {{ $entry->ph }}
+EC: {{ $entry->ec_uscm }} µS/cm
+
+Azot (N): {{ $entry->n_mgkg }} mg/kg
+Fosfor (P): {{ $entry->p_mgkg }} mg/kg
+Potas (K): {{ $entry->k_mgkg }} mg/kg
+Zasolenie: {{ $entry->salt_mgl }} mg/l
+                            </textarea>
                         </div>
                     </div>
                 @endif
