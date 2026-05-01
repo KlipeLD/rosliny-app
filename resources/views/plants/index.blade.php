@@ -161,7 +161,6 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        <span title="Roślina zwykle wymaga podlewania później niż przewidywany interwał" aria-label="Roślina zwykle wymaga podlewania później niż przewidywany interwał">&#128167;</span>
                                     </div>
 
                                     <div class="small text-muted mt-2">

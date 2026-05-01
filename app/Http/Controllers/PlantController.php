@@ -194,18 +194,32 @@ class PlantController extends Controller
             'soil_moisture_ideal_min' => ['nullable', 'numeric', 'between:0,100'],
             'soil_moisture_ideal_max' => ['nullable', 'numeric', 'between:0,100', 'gte:soil_moisture_ideal_min'],
             'watering_interval_days' => ['nullable', 'integer', 'between:1,365'],
+            'temp_min' => ['nullable', 'numeric', 'between:-50,80'],
+            'temp_max' => ['nullable', 'numeric', 'between:-50,80', 'gte:temp_min'],
             'temp_ideal_min' => ['nullable', 'numeric', 'between:-50,80'],
             'temp_ideal_max' => ['nullable', 'numeric', 'between:-50,80', 'gte:temp_ideal_min'],
+            'ph_min' => ['nullable', 'numeric', 'between:0,14'],
+            'ph_max' => ['nullable', 'numeric', 'between:0,14', 'gte:ph_min'],
             'ph_ideal_min' => ['nullable', 'numeric', 'between:0,14'],
             'ph_ideal_max' => ['nullable', 'numeric', 'between:0,14', 'gte:ph_ideal_min'],
+            'ec_min' => ['nullable', 'numeric', 'min:0'],
+            'ec_max' => ['nullable', 'numeric', 'min:0', 'gte:ec_min'],
             'ec_ideal_min' => ['nullable', 'numeric', 'min:0'],
             'ec_ideal_max' => ['nullable', 'numeric', 'min:0', 'gte:ec_ideal_min'],
+            'n_min' => ['nullable', 'numeric', 'min:0'],
+            'n_max' => ['nullable', 'numeric', 'min:0', 'gte:n_min'],
             'n_ideal_min' => ['nullable', 'numeric', 'min:0'],
             'n_ideal_max' => ['nullable', 'numeric', 'min:0', 'gte:n_ideal_min'],
+            'p_min' => ['nullable', 'numeric', 'min:0'],
+            'p_max' => ['nullable', 'numeric', 'min:0', 'gte:p_min'],
             'p_ideal_min' => ['nullable', 'numeric', 'min:0'],
             'p_ideal_max' => ['nullable', 'numeric', 'min:0', 'gte:p_ideal_min'],
+            'k_min' => ['nullable', 'numeric', 'min:0'],
+            'k_max' => ['nullable', 'numeric', 'min:0', 'gte:k_min'],
             'k_ideal_min' => ['nullable', 'numeric', 'min:0'],
             'k_ideal_max' => ['nullable', 'numeric', 'min:0', 'gte:k_ideal_min'],
+            'salt_min' => ['nullable', 'numeric', 'min:0'],
+            'salt_max' => ['nullable', 'numeric', 'min:0', 'gte:salt_min'],
             'salt_ideal_min' => ['nullable', 'numeric', 'min:0'],
             'salt_ideal_max' => ['nullable', 'numeric', 'min:0', 'gte:salt_ideal_min'],
         ]);
@@ -248,6 +262,32 @@ class PlantController extends Controller
             }
         }
 
+        foreach ($this->parameterRangeDefinitions() as $range) {
+            [$minField, $maxField] = $range['acceptable'];
+            [$idealMinField, $idealMaxField] = $range['ideal'];
+
+            if ($request->filled($minField) xor $request->filled($maxField)) {
+                throw ValidationException::withMessages([
+                    $request->filled($minField) ? $maxField : $minField => 'Uzupełnij pełny zakres dopuszczalny dla pola: '.$range['label'].'.',
+                ]);
+            }
+
+            if (
+                $request->filled($minField) &&
+                $request->filled($maxField) &&
+                $request->filled($idealMinField) &&
+                $request->filled($idealMaxField) &&
+                (
+                    (float) $validated[$idealMinField] < (float) $validated[$minField] ||
+                    (float) $validated[$idealMaxField] > (float) $validated[$maxField]
+                )
+            ) {
+                throw ValidationException::withMessages([
+                    $idealMinField => 'Zakres idealny musi mieścić się w zakresie dopuszczalnym dla pola: '.$range['label'].'.',
+                ]);
+            }
+        }
+
         return $validated;
     }
 
@@ -264,10 +304,26 @@ class PlantController extends Controller
         ];
     }
 
+    private function parameterRangeDefinitions(): array
+    {
+        return [
+            ['label' => 'temperatura', 'acceptable' => ['temp_min', 'temp_max'], 'ideal' => ['temp_ideal_min', 'temp_ideal_max']],
+            ['label' => 'pH', 'acceptable' => ['ph_min', 'ph_max'], 'ideal' => ['ph_ideal_min', 'ph_ideal_max']],
+            ['label' => 'EC', 'acceptable' => ['ec_min', 'ec_max'], 'ideal' => ['ec_ideal_min', 'ec_ideal_max']],
+            ['label' => 'azot', 'acceptable' => ['n_min', 'n_max'], 'ideal' => ['n_ideal_min', 'n_ideal_max']],
+            ['label' => 'fosfor', 'acceptable' => ['p_min', 'p_max'], 'ideal' => ['p_ideal_min', 'p_ideal_max']],
+            ['label' => 'potas', 'acceptable' => ['k_min', 'k_max'], 'ideal' => ['k_ideal_min', 'k_ideal_max']],
+            ['label' => 'zasolenie', 'acceptable' => ['salt_min', 'salt_max'], 'ideal' => ['salt_ideal_min', 'salt_ideal_max']],
+        ];
+    }
+
     private function parameterRangeFields(): array
     {
-        return collect($this->parameterRangePairs())
-            ->flatMap(fn ($pair) => $pair)
+        return collect($this->parameterRangeDefinitions())
+            ->flatMap(fn ($range) => [
+                ...$range['acceptable'],
+                ...$range['ideal'],
+            ])
             ->values()
             ->all();
     }

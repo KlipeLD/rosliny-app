@@ -17,18 +17,32 @@ class Plant extends Model
         'soil_moisture_ideal_min',
         'soil_moisture_ideal_max',
         'watering_interval_days',
+        'temp_min',
+        'temp_max',
         'temp_ideal_min',
         'temp_ideal_max',
+        'ph_min',
+        'ph_max',
         'ph_ideal_min',
         'ph_ideal_max',
+        'ec_min',
+        'ec_max',
         'ec_ideal_min',
         'ec_ideal_max',
+        'n_min',
+        'n_max',
         'n_ideal_min',
         'n_ideal_max',
+        'p_min',
+        'p_max',
         'p_ideal_min',
         'p_ideal_max',
+        'k_min',
+        'k_max',
         'k_ideal_min',
         'k_ideal_max',
+        'salt_min',
+        'salt_max',
         'salt_ideal_min',
         'salt_ideal_max',
     ];
@@ -39,18 +53,32 @@ class Plant extends Model
         'soil_moisture_ideal_min' => 'float',
         'soil_moisture_ideal_max' => 'float',
         'watering_interval_days' => 'integer',
+        'temp_min' => 'float',
+        'temp_max' => 'float',
         'temp_ideal_min' => 'float',
         'temp_ideal_max' => 'float',
+        'ph_min' => 'float',
+        'ph_max' => 'float',
         'ph_ideal_min' => 'float',
         'ph_ideal_max' => 'float',
+        'ec_min' => 'float',
+        'ec_max' => 'float',
         'ec_ideal_min' => 'float',
         'ec_ideal_max' => 'float',
+        'n_min' => 'float',
+        'n_max' => 'float',
         'n_ideal_min' => 'float',
         'n_ideal_max' => 'float',
+        'p_min' => 'float',
+        'p_max' => 'float',
         'p_ideal_min' => 'float',
         'p_ideal_max' => 'float',
+        'k_min' => 'float',
+        'k_max' => 'float',
         'k_ideal_min' => 'float',
         'k_ideal_max' => 'float',
+        'salt_min' => 'float',
+        'salt_max' => 'float',
         'salt_ideal_min' => 'float',
         'salt_ideal_max' => 'float',
     ];
@@ -109,12 +137,22 @@ class Plant extends Model
     {
         $idealMin = $this->{$prefix.'_ideal_min'};
         $idealMax = $this->{$prefix.'_ideal_max'};
+        $acceptableMin = $this->{$prefix.'_min'};
+        $acceptableMax = $this->{$prefix.'_max'};
 
-        if ($idealMin === null || $idealMax === null) {
-            return $defaults;
+        $ranges = $defaults;
+
+        if ($idealMin !== null && $idealMax !== null) {
+            $ranges[0] = (float) $idealMin;
+            $ranges[1] = (float) $idealMax;
         }
 
-        return [(float) $idealMin, (float) $idealMax, $defaults[2], $defaults[3]];
+        if ($acceptableMin !== null && $acceptableMax !== null) {
+            $ranges[2] = (float) $acceptableMin;
+            $ranges[3] = (float) $acceptableMax;
+        }
+
+        return $ranges;
     }
 
     public function predictedWatering(?Collection $entries = null): array
