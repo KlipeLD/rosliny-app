@@ -69,6 +69,8 @@
             @error('soil_moisture_ideal_max')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
         </div>
 
+        @include('plants._parameter_ranges')
+
         <div class="mb-4">
             <label class="form-label">Podlewanie co ile dni</label>
             <input type="number" min="1" max="365" step="1" name="watering_interval_days" value="{{ old('watering_interval_days', $plant->watering_interval_days) }}" class="form-control @error('watering_interval_days') is-invalid @enderror">

@@ -8,6 +8,7 @@ class PlantEntry extends Model
 {
     protected $fillable = [
         'plant_id','source','payload','note','recorded_at',
+        'current_photo_path',
         'ts_ms','temp_c','moist_pct','ec_uscm','ph',
         'n_mgkg','p_mgkg','k_mgkg','salt_mgl',
     ];

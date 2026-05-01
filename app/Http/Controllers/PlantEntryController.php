@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use App\Models\Plant;
 use App\Models\PlantEntry;
 
@@ -33,9 +34,27 @@ class PlantEntryController extends Controller
             'p_mgkg' => ['nullable', 'integer'],
             'k_mgkg' => ['nullable', 'integer'],
             'salt_mgl' => ['nullable', 'integer'],
+            'current_photo' => ['nullable', 'image', 'max:4096'],
+            'remove_current_photo' => ['nullable', 'boolean'],
         ]);
 
-        $entry->update($validated);
+        unset($validated['current_photo'], $validated['remove_current_photo']);
+
+        if ($request->boolean('remove_current_photo') && $entry->current_photo_path) {
+            Storage::disk('public')->delete($entry->current_photo_path);
+            $entry->current_photo_path = null;
+        }
+
+        if ($request->hasFile('current_photo')) {
+            if ($entry->current_photo_path) {
+                Storage::disk('public')->delete($entry->current_photo_path);
+            }
+
+            $entry->current_photo_path = $request->file('current_photo')->store('plant-entries', 'public');
+        }
+
+        $entry->fill($validated);
+        $entry->save();
 
         return redirect()
             ->route('plants.show', $entry->plant_id)
@@ -45,6 +64,10 @@ class PlantEntryController extends Controller
     public function destroy(PlantEntry $entry)
     {
         $plantId = $entry->plant_id;
+
+        if ($entry->current_photo_path) {
+            Storage::disk('public')->delete($entry->current_photo_path);
+        }
 
         $entry->delete();
 
@@ -93,22 +116,22 @@ class PlantEntryController extends Controller
 
     public function storeWatering(Request $request, Plant $plant)
     {
-        if ($plant->plant_type !== 'manual') {
-            return back()->with('error', 'Podlewanie ręczne jest dostępne tylko dla roślin bez czujnika.');
-        }
-
         $validated = $request->validate([
+            'actions' => ['required', 'array', 'min:1'],
+            'actions.*' => ['string', 'in:watering,fertilizing,repotting'],
             'recorded_at' => ['required', 'date'],
             'note' => ['nullable', 'string', 'max:2000'],
         ]);
 
-        $plant->entries()->create([
-            'source' => 'watering',
-            'payload' => [],
-            'recorded_at' => $validated['recorded_at'],
-            'note' => $validated['note'] ?? null,
-        ]);
+        foreach (array_unique($validated['actions']) as $action) {
+            $plant->entries()->create([
+                'source' => $action,
+                'payload' => [],
+                'recorded_at' => $validated['recorded_at'],
+                'note' => $validated['note'] ?? null,
+            ]);
+        }
 
-        return back()->with('success', 'Dodano wpis podlewania');
+        return back()->with('success', 'Dodano wpis pielęgnacji');
     }
 }

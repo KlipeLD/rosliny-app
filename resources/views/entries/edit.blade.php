@@ -11,7 +11,7 @@
         <a href="{{ route('plants.show', $entry->plant_id) }}" class="btn btn-outline-secondary">Wróć</a>
     </div>
 
-    <form method="POST" action="{{ route('entries.update', $entry) }}" class="card p-4">
+    <form method="POST" action="{{ route('entries.update', $entry) }}" class="card p-4" enctype="multipart/form-data">
         @csrf
         @method('PATCH')
 
@@ -54,6 +54,23 @@
                 <label class="form-label">Sól</label>
                 <input type="text" name="salt_mgl" class="form-control" value="{{ old('salt_mgl', $entry->salt_mgl) }}">
             </div>
+        </div>
+
+        <div class="mt-3">
+            <label class="form-label">Zdjęcie stanu aktualnego</label>
+            @if($entry->current_photo_path)
+                <div class="mb-2">
+                    <img src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($entry->current_photo_path) }}" alt="Zdjęcie stanu aktualnego" class="img-fluid rounded" style="max-height: 260px; object-fit: cover;">
+                </div>
+                <div class="form-check mb-2">
+                    <input type="checkbox" name="remove_current_photo" value="1" class="form-check-input" id="remove_current_photo">
+                    <label class="form-check-label" for="remove_current_photo">Usuń obecne zdjęcie</label>
+                </div>
+            @endif
+            <input type="file" name="current_photo" accept="image/*" class="form-control @error('current_photo') is-invalid @enderror">
+            @error('current_photo')
+                <div class="invalid-feedback">{{ $message }}</div>
+            @enderror
         </div>
 
         <div class="mt-3 d-flex gap-2">
