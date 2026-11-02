@@ -5,6 +5,7 @@
 *.html diff=html
 *.md diff=markdown
 *.php diff=php
+*.vue linguist-detectable=false
 
 CHANGELOG.md export-ignore
 README.md export-ignore
