@@ -12,7 +12,7 @@
                 <p class="mb-0">{{ $plant->description }}</p>
             @endif
             <div class="small text-muted mt-1">
-                Typ: {{ $plant->plant_type === 'manual' ? 'Tylko podlewanie' : 'Z czujnikiem' }}
+                Typ: {{ $plant->plant_type === \App\Enums\PlantType::Manual ? 'Tylko podlewanie' : 'Z czujnikiem' }}
             </div>
         </div>
 
@@ -67,7 +67,7 @@
     <div class="card p-3 mb-4">
         <h5 class="mb-3">Historia wpisów</h5>
 
-        @if($plant->plant_type === 'sensor')
+        @if($plant->plant_type === \App\Enums\PlantType::Sensor)
             <form method="POST" action="{{ route('plants.entries.fetch', $plant) }}" class="mb-3">
                 @csrf
                 <button type="submit" class="btn btn-primary">Pobierz dane z API</button>
@@ -77,7 +77,7 @@
         @php
             $selectedCareActions = session()->hasOldInput()
                 ? old('actions', [])
-                : ['watering'];
+                : [\App\Enums\PlantEntrySource::Watering->value];
         @endphp
 
         <form method="POST" action="{{ route('plants.entries.watering', $plant) }}" class="card card-body mb-3">
@@ -94,15 +94,15 @@
                     <label class="form-label">Czynności</label>
                     <div class="@error('actions') is-invalid @enderror">
                         <div class="form-check">
-                            <input type="checkbox" name="actions[]" value="watering" class="form-check-input" id="care-watering" @checked(in_array('watering', $selectedCareActions, true))>
+                            <input type="checkbox" name="actions[]" value="{{ \App\Enums\PlantEntrySource::Watering->value }}" class="form-check-input" id="care-watering" @checked(in_array(\App\Enums\PlantEntrySource::Watering->value, $selectedCareActions, true))>
                             <label class="form-check-label" for="care-watering">Podlanie</label>
                         </div>
                         <div class="form-check">
-                            <input type="checkbox" name="actions[]" value="fertilizing" class="form-check-input" id="care-fertilizing" @checked(in_array('fertilizing', $selectedCareActions, true))>
+                            <input type="checkbox" name="actions[]" value="{{ \App\Enums\PlantEntrySource::Fertilizing->value }}" class="form-check-input" id="care-fertilizing" @checked(in_array(\App\Enums\PlantEntrySource::Fertilizing->value, $selectedCareActions, true))>
                             <label class="form-check-label" for="care-fertilizing">Nawożenie</label>
                         </div>
                         <div class="form-check">
-                            <input type="checkbox" name="actions[]" value="repotting" class="form-check-input" id="care-repotting" @checked(in_array('repotting', $selectedCareActions, true))>
+                            <input type="checkbox" name="actions[]" value="{{ \App\Enums\PlantEntrySource::Repotting->value }}" class="form-check-input" id="care-repotting" @checked(in_array(\App\Enums\PlantEntrySource::Repotting->value, $selectedCareActions, true))>
                             <label class="form-check-label" for="care-repotting">Przesadzenie do nowej ziemi</label>
                         </div>
                     </div>
@@ -130,19 +130,19 @@
             <div class="text-muted">Brak wpisów.</div>
         @else
             @foreach($entries as $entry)
-                @if(in_array($entry->source, ['watering', 'fertilizing', 'repotting'], true))
+                @if(in_array($entry->source, [\App\Enums\PlantEntrySource::Watering, \App\Enums\PlantEntrySource::Fertilizing, \App\Enums\PlantEntrySource::Repotting], true))
                     @php
                         $careLabels = [
-                            'watering' => 'Podlewanie',
-                            'fertilizing' => 'Nawożenie',
-                            'repotting' => 'Przesadzenie do nowej ziemi',
+                            \App\Enums\PlantEntrySource::Watering->value => 'Podlewanie',
+                            \App\Enums\PlantEntrySource::Fertilizing->value => 'Nawożenie',
+                            \App\Enums\PlantEntrySource::Repotting->value => 'Przesadzenie do nowej ziemi',
                         ];
                     @endphp
                     <div class="card mb-3 shadow-sm">
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-start mb-3">
                                 <div>
-                                    <div class="fw-semibold">{{ $careLabels[$entry->source] ?? $entry->source }}</div>
+                                    <div class="fw-semibold">{{ $careLabels[$entry->source->value] ?? $entry->source->value }}</div>
                                     <div class="text-muted small">{{ ($entry->recorded_at ?? $entry->created_at)->format('Y-m-d H:i') }}</div>
                                 </div>
 
@@ -199,14 +199,14 @@
                         $phosphorusRanges = $plant->phosphorusRanges();
                         $potassiumRanges = $plant->potassiumRanges();
                         $saltRanges = $plant->saltRanges();
-                        $temp = param_status($entry->temp_c, $tempRanges);
-                        $moist = param_status($entry->moist_pct, $moistureRanges);
-                        $ph = param_status($entry->ph, $phRanges);
-                        $ec = param_status($entry->ec_uscm, $ecRanges);
-                        $n = param_status($entry->n_mgkg, $nitrogenRanges);
-                        $p = param_status($entry->p_mgkg, $phosphorusRanges);
-                        $k = param_status($entry->k_mgkg, $potassiumRanges);
-                        $salt = param_status($entry->salt_mgl, $saltRanges);
+                        $temp = $tempRanges->status($entry->temp_c);
+                        $moist = $moistureRanges->status($entry->moist_pct);
+                        $ph = $phRanges->status($entry->ph);
+                        $ec = $ecRanges->status($entry->ec_uscm);
+                        $n = $nitrogenRanges->status($entry->n_mgkg);
+                        $p = $phosphorusRanges->status($entry->p_mgkg);
+                        $k = $potassiumRanges->status($entry->k_mgkg);
+                        $salt = $saltRanges->status($entry->salt_mgl);
                         $tempHintIcon = null;
                         $tempHintLabel = null;
                         $phHintIcon = null;
@@ -223,86 +223,86 @@
                         $potassiumHintLabel = null;
 
                         if ($entry->temp_c !== null) {
-                            if ((float) $entry->temp_c > (float) $tempRanges[1]) {
+                            if ($tempRanges->isAboveIdeal($entry->temp_c)) {
                                 $tempHintIcon = '&#10052;';
                                 $tempHintLabel = 'Temperatura za wysoka';
-                            } elseif ((float) $entry->temp_c < (float) $tempRanges[0]) {
+                            } elseif ($tempRanges->isBelowIdeal($entry->temp_c)) {
                                 $tempHintIcon = '&#9728;&#65039;';
                                 $tempHintLabel = 'Temperatura za niska';
                             }
                         }
 
                         if ($entry->ph !== null) {
-                            if ((float) $entry->ph > (float) $phRanges[1]) {
+                            if ($phRanges->isAboveIdeal($entry->ph)) {
                                 $phHintIcon = '&#127819;';
                                 $phHintLabel = 'pH za wysokie';
-                            } elseif ((float) $entry->ph < (float) $phRanges[0]) {
+                            } elseif ($phRanges->isBelowIdeal($entry->ph)) {
                                 $phHintIcon = '🚿';
                                 $phHintLabel = 'pH za niskie - dolomit';
                             }
                         }
 
                         if ($entry->ec_uscm !== null) {
-                            if ((float) $entry->ec_uscm > (float) $ecRanges[1]) {
+                            if ($ecRanges->isAboveIdeal($entry->ec_uscm)) {
                                 $ecHintIcon = '&#128705;';
                                 $ecHintLabel = 'EC za wysokie';
-                            } elseif ((float) $entry->ec_uscm < (float) $ecRanges[0]) {
+                            } elseif ($ecRanges->isBelowIdeal($entry->ec_uscm)) {
                                 $ecHintIcon = '&#129514;';
                                 $ecHintLabel = 'EC za niskie';
                             }
                         }
 
                         if ($entry->salt_mgl !== null) {
-                            if ((float) $entry->salt_mgl > (float) $saltRanges[1]) {
+                            if ($saltRanges->isAboveIdeal($entry->salt_mgl)) {
                                 $saltHintIcon = '&#128705;';
                                 $saltHintLabel = 'Zasolenie za wysokie';
-                            } elseif ((float) $entry->salt_mgl < (float) $saltRanges[0]) {
+                            } elseif ($saltRanges->isBelowIdeal($entry->salt_mgl)) {
                                 $saltHintIcon = '&#129514;';
                                 $saltHintLabel = 'Zasolenie za niskie';
                             }
                         }
 
                         if ($entry->n_mgkg !== null) {
-                            if ((float) $entry->n_mgkg > (float) $nitrogenRanges[1]) {
+                            if ($nitrogenRanges->isAboveIdeal($entry->n_mgkg)) {
                                 $nitrogenHintIcon = '&#128705;';
                                 $nitrogenHintLabel = 'Azot za wysoki';
-                            } elseif ((float) $entry->n_mgkg < (float) $nitrogenRanges[0]) {
+                            } elseif ($nitrogenRanges->isBelowIdeal($entry->n_mgkg)) {
                                 $nitrogenHintIcon = '&#129514;';
                                 $nitrogenHintLabel = 'Azot za niski';
                             }
                         }
 
                         if ($entry->p_mgkg !== null) {
-                            if ((float) $entry->p_mgkg > (float) $phosphorusRanges[1]) {
+                            if ($phosphorusRanges->isAboveIdeal($entry->p_mgkg)) {
                                 $phosphorusHintIcon = '&#128705;';
                                 $phosphorusHintLabel = 'Fosfor za wysoki';
-                            } elseif ((float) $entry->p_mgkg < (float) $phosphorusRanges[0]) {
+                            } elseif ($phosphorusRanges->isBelowIdeal($entry->p_mgkg)) {
                                 $phosphorusHintIcon = '&#129514;';
                                 $phosphorusHintLabel = 'Fosfor za niski';
                             }
                         }
 
                         if ($entry->k_mgkg !== null) {
-                            if ((float) $entry->k_mgkg > (float) $potassiumRanges[1]) {
+                            if ($potassiumRanges->isAboveIdeal($entry->k_mgkg)) {
                                 $potassiumHintIcon = '&#128705;';
                                 $potassiumHintLabel = 'Potas za wysoki';
-                            } elseif ((float) $entry->k_mgkg < (float) $potassiumRanges[0]) {
+                            } elseif ($potassiumRanges->isBelowIdeal($entry->k_mgkg)) {
                                 $potassiumHintIcon = '&#129514;';
                                 $potassiumHintLabel = 'Potas za niski';
                             }
                         }
-                        $soilMin = $plant->soil_moisture_min ?? 10;
-                        $soilMax = $plant->soil_moisture_max ?? 80;
-                        $soilIdealMin = $plant->soil_moisture_ideal_min ?? 20;
-                        $soilIdealMax = $plant->soil_moisture_ideal_max ?? 60;
+                        $soilMin = $moistureRanges->acceptableMin;
+                        $soilMax = $moistureRanges->acceptableMax;
+                        $soilIdealMin = $moistureRanges->idealMin;
+                        $soilIdealMax = $moistureRanges->idealMax;
                         $moistValue = $entry->moist_pct;
                         $moistMarker = $moistValue !== null ? max(0, min(100, (float) $moistValue)) : null;
                         $moistHint = null;
 
                         if ($moistValue !== null) {
-                            if ((float) $moistValue < (float) $soilIdealMin) {
+                            if ($moistureRanges->isBelowIdeal($moistValue)) {
                                 $moistHint = '💧';
-                            } elseif ((float) $moistValue > (float) $soilMax) {
+                            } elseif ($moistValue > $moistureRanges->acceptableMax) {
                                 $moistHint = '☀️';
                             }
                         }
@@ -316,7 +316,7 @@
 
                             <div class="d-flex justify-content-between mb-3">
                                 <div class="text-muted small">
-                                    {{ ($entry->recorded_at ?? $entry->created_at)->format('Y-m-d H:i') }} · {{ $entry->source }}
+                                    {{ ($entry->recorded_at ?? $entry->created_at)->format('Y-m-d H:i') }} · {{ $entry->source->value }}
                                 </div>
 
                                 <div class="d-flex gap-2">
@@ -334,7 +334,7 @@
                                 </div>
                             </div>
 
-                            <div class="soil-moisture-card soil-moisture-card--{{ $moist['class'] }} mb-3">
+                            <div class="soil-moisture-card soil-moisture-card--{{ $moist->cssClass() }} mb-3">
                                 <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
                                     <div>
                                         <div class="soil-moisture-card__label">Wilgotność gleby</div>
@@ -349,7 +349,7 @@
                                             @endif
                                         </div>
                                     </div>
-                                    <div class="soil-moisture-card__status">{{ $moist['label'] }}</div>
+                                    <div class="soil-moisture-card__status">{{ $moist->label() }}</div>
                                 </div>
 
                                 <div class="soil-moisture-scale">

@@ -4,7 +4,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::table('plant_entries', function (Blueprint $table) {
@@ -27,8 +28,8 @@ return new class extends Migration {
     {
         Schema::table('plant_entries', function (Blueprint $table) {
             $table->dropColumn([
-                'ts_ms','temp_c','moist_pct','ec_uscm','ph',
-                'n_mgkg','p_mgkg','k_mgkg','salt_mgl'
+                'ts_ms', 'temp_c', 'moist_pct', 'ec_uscm', 'ph',
+                'n_mgkg', 'p_mgkg', 'k_mgkg', 'salt_mgl',
             ]);
         });
     }

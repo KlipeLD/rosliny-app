@@ -1,8 +1,8 @@
 @php
-    $rangeIdealMin = (float) $ranges[0];
-    $rangeIdealMax = (float) $ranges[1];
-    $rangeWarnMin = (float) $ranges[2];
-    $rangeWarnMax = (float) $ranges[3];
+    $rangeIdealMin = (float) $ranges->idealMin;
+    $rangeIdealMax = (float) $ranges->idealMax;
+    $rangeWarnMin = (float) $ranges->acceptableMin;
+    $rangeWarnMax = (float) $ranges->acceptableMax;
     $numericValue = $value !== null ? (float) $value : null;
     $scaleMin = min($rangeWarnMin, $rangeIdealMin, $numericValue ?? $rangeWarnMin);
     $scaleMax = max($rangeWarnMax, $rangeIdealMax, $numericValue ?? $rangeWarnMax);
@@ -26,7 +26,7 @@
 @endphp
 
 <div class="{{ $columnClass }}">
-    <div class="param-box bg-{{ $status['class'] }}">
+    <div class="param-box bg-{{ $status->cssClass() }}">
         <div class="param-label">{{ $label }}</div>
         <div class="param-value">
             {{ $displayValue }} @if($numericValue !== null){{ $unit }}@endif
@@ -34,7 +34,7 @@
                 <span class="param-value__hint" title="{{ $hintLabel }}" aria-label="{{ $hintLabel }}">{!! $hintIcon !!}</span>
             @endif
         </div>
-        <div class="param-status">{{ $status['label'] }}</div>
+        <div class="param-status">{{ $status->label() }}</div>
 
         <div class="param-scale" aria-label="{{ $label }}: zakres idealny {{ $displayIdealMin }}-{{ $displayIdealMax }} {{ $unit }}">
             <div class="param-scale__base"></div>

@@ -184,7 +184,7 @@
     <div class="row g-4">
         @foreach ($plants as $plant)
             @php
-                $wateringPrediction = $plant->predictedWatering($plant->entries);
+                $wateringPrediction = $wateringPredictions[$plant->id];
                 $needsWateringSoon = $wateringPrediction['available']
                     && $wateringPrediction['date']->copy()->startOfDay()->lessThanOrEqualTo(now()->startOfDay());
             @endphp

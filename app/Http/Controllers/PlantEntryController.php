@@ -1,136 +1,100 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Storage;
+use App\Actions\PlantEntries\DeletePlantEntry;
+use App\Actions\PlantEntries\StorePlantCare;
+use App\Actions\PlantEntries\StoreSensorReading;
+use App\Actions\PlantEntries\UpdatePlantEntry;
+use App\Enums\PlantType;
+use App\Http\Requests\PlantEntries\StorePlantCareRequest;
+use App\Http\Requests\PlantEntries\UpdatePlantEntryRequest;
 use App\Models\Plant;
 use App\Models\PlantEntry;
+use App\Services\Sensors\SensorClient;
+use App\Services\Sensors\SensorClientException;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 
 class PlantEntryController extends Controller
 {
-    public function index(Plant $plant)
+    public function __construct(
+        private readonly SensorClient $sensorClient,
+    ) {}
+
+    public function index(Plant $plant): View
     {
         $entries = $plant->entries()->latest('recorded_at')->paginate(50);
+
         return view('entries.index', compact('plant', 'entries'));
     }
 
-
-    public function edit(PlantEntry $entry)
+    public function edit(PlantEntry $entry): View
     {
         return view('entries.edit', compact('entry'));
     }
 
-    public function update(Request $request, PlantEntry $entry)
-    {
-        $validated = $request->validate([
-            'note' => ['nullable', 'string', 'max:2000'],
-            'temp_c' => ['nullable', 'numeric'],
-            'moist_pct' => ['nullable', 'numeric'],
-            'ec_uscm' => ['nullable', 'integer'],
-            'ph' => ['nullable', 'numeric'],
-            'n_mgkg' => ['nullable', 'integer'],
-            'p_mgkg' => ['nullable', 'integer'],
-            'k_mgkg' => ['nullable', 'integer'],
-            'salt_mgl' => ['nullable', 'integer'],
-            'current_photo' => ['nullable', 'image', 'max:4096'],
-            'remove_current_photo' => ['nullable', 'boolean'],
-        ]);
-
-        unset($validated['current_photo'], $validated['remove_current_photo']);
-
-        if ($request->boolean('remove_current_photo') && $entry->current_photo_path) {
-            Storage::disk('public')->delete($entry->current_photo_path);
-            $entry->current_photo_path = null;
-        }
-
-        if ($request->hasFile('current_photo')) {
-            if ($entry->current_photo_path) {
-                Storage::disk('public')->delete($entry->current_photo_path);
-            }
-
-            $entry->current_photo_path = $request->file('current_photo')->store('plant-entries', 'public');
-        }
-
-        $entry->fill($validated);
-        $entry->save();
+    public function update(
+        UpdatePlantEntryRequest $request,
+        PlantEntry $entry,
+        UpdatePlantEntry $updatePlantEntry,
+    ): RedirectResponse {
+        $updatePlantEntry->execute(
+            $entry,
+            $request->validated(),
+            $request->file('current_photo'),
+            $request->boolean('remove_current_photo'),
+        );
 
         return redirect()
             ->route('plants.show', $entry->plant_id)
             ->with('success', 'Wpis zaktualizowany');
     }
 
-    public function destroy(PlantEntry $entry)
+    public function destroy(PlantEntry $entry, DeletePlantEntry $deletePlantEntry): RedirectResponse
     {
         $plantId = $entry->plant_id;
 
-        if ($entry->current_photo_path) {
-            Storage::disk('public')->delete($entry->current_photo_path);
-        }
-
-        $entry->delete();
+        $deletePlantEntry->execute($entry);
 
         return redirect()
             ->route('plants.show', $plantId)
             ->with('success', 'Wpis został usunięty');
     }
 
-    public function fetchFromApi(Plant $plant)
-    {
-        if ($plant->plant_type !== 'sensor') {
-            return back()->with('error', 'Ta roślina nie korzysta z danych z czujnika.');
+    public function fetchFromApi(
+        Plant $plant,
+        StoreSensorReading $storeSensorReading,
+    ): RedirectResponse {
+        if ($plant->plant_type !== PlantType::Sensor) {
+            return back()->with(
+                'error',
+                'Ta roślina nie korzysta z danych z czujnika.',
+            );
         }
 
-        $response = Http::timeout(5)
-            ->acceptJson()
-            ->get(rtrim(config('services.plant_api.base_url'), '/').'/soil');
-
-        if (!$response->successful()) {
-            return back()->with('error', 'Błąd pobierania danych z czujnika (HTTP '.$response->status().')');
+        try {
+            $reading = $this->sensorClient->fetchSoilReading();
+        } catch (SensorClientException $exception) {
+            return back()->with('error', $exception->getMessage());
         }
 
-        $data = $response->json();
+        $storeSensorReading->execute($plant, $reading);
 
-        if (!is_array($data) || !($data['ok'] ?? false)) {
-            return back()->with('error', 'Czujnik zwrócił niepoprawne dane');
-        }
-
-        $plant->entries()->create([
-            'source' => 'soil',
-            'payload' => $data,
-            'recorded_at' => now(),
-            'ts_ms' => $data['ts_ms'] ?? null,
-            'temp_c' => $data['temp_c'] ?? null,
-            'moist_pct' => $data['moist_pct'] ?? null,
-            'ec_uscm' => $data['ec_uscm'] ?? null,
-            'ph' => $data['ph'] ?? null,
-            'n_mgkg' => $data['n_mgkg'] ?? null,
-            'p_mgkg' => $data['p_mgkg'] ?? null,
-            'k_mgkg' => $data['k_mgkg'] ?? null,
-            'salt_mgl' => $data['salt_mgl'] ?? null,
-        ]);
-
-        return back()->with('success', 'Dodano nowy wpis z czujnika');
+        return back()->with(
+            'success',
+            'Dodano nowy wpis z czujnika',
+        );
     }
 
-    public function storeWatering(Request $request, Plant $plant)
-    {
-        $validated = $request->validate([
-            'actions' => ['required', 'array', 'min:1'],
-            'actions.*' => ['string', 'in:watering,fertilizing,repotting'],
-            'recorded_at' => ['required', 'date'],
-            'note' => ['nullable', 'string', 'max:2000'],
-        ]);
-
-        foreach (array_unique($validated['actions']) as $action) {
-            $plant->entries()->create([
-                'source' => $action,
-                'payload' => [],
-                'recorded_at' => $validated['recorded_at'],
-                'note' => $validated['note'] ?? null,
-            ]);
-        }
+    public function storeWatering(
+        StorePlantCareRequest $request,
+        Plant $plant,
+        StorePlantCare $storePlantCare,
+    ): RedirectResponse {
+        $storePlantCare->execute($plant, $request->validated());
 
         return back()->with('success', 'Dodano wpis pielęgnacji');
     }

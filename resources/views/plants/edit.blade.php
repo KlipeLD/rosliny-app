@@ -22,8 +22,8 @@
         <div class="mb-3">
             <label class="form-label">Typ rośliny</label>
             <select name="plant_type" class="form-select @error('plant_type') is-invalid @enderror">
-                <option value="sensor" @selected(old('plant_type', $plant->plant_type ?? 'sensor') === 'sensor')>Z czujnikiem</option>
-                <option value="manual" @selected(old('plant_type', $plant->plant_type) === 'manual')>Tylko podlewanie</option>
+                <option value="{{ \App\Enums\PlantType::Sensor->value }}" @selected(old('plant_type', $plant->plant_type->value) === \App\Enums\PlantType::Sensor->value)>Z czujnikiem</option>
+                <option value="{{ \App\Enums\PlantType::Manual->value }}" @selected(old('plant_type', $plant->plant_type->value) === \App\Enums\PlantType::Manual->value)>Tylko podlewanie</option>
             </select>
             @error('plant_type')
                 <div class="invalid-feedback">{{ $message }}</div>
